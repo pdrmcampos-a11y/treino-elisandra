@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Treino Eli</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1623">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Treino Eli">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+/* Paleta: violeta = ação, verde = feito. Textos com contraste ≥ 4,5:1 sobre o fundo. */
+:root{--bg:#0f1623;--card:#192234;--line:#2b3750;--btn:#273449;--txt:#f8fafc;--mute:#aab6ca;
+  --primary:#c084fc;--on-primary:#0f172a;--ok:#22c55e;--warn:#d8b4fe}
+/* manipulation = sem zoom por toque duplo/rápido (o pinça-para-zoom continua funcionando) */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+body{margin:0;background:var(--bg);color:var(--txt);font:17px/1.3 -apple-system,system-ui,sans-serif;
+  -webkit-user-select:none;user-select:none;font-variant-numeric:tabular-nums;
+  padding:calc(12px + env(safe-area-inset-top)) 12px calc(88px + env(safe-area-inset-bottom))}
+body.lock{overflow:hidden}
+input,textarea{-webkit-user-select:text;user-select:text}
+h2{display:flex;justify-content:space-between;font-size:14px;font-weight:600;color:var(--mute);margin:20px 0 8px;text-transform:uppercase;letter-spacing:.06em}
+h3{margin:0;font-size:20px}
+h4{margin:16px 0 8px;font-size:14px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.card{background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:10px}
+.card.done{box-shadow:inset 3px 0 0 var(--ok)}
+.card.ex{padding:2px 14px 10px}
+.row{display:flex;align-items:center;gap:8px}
+.grow{flex:1;min-width:0}
+.name{font-weight:600}
+.sub{font-size:14px;color:var(--mute)}
+.tip{color:var(--warn)}
+button{font:inherit;color:var(--txt);background:var(--btn);border:0;border-radius:12px;min-width:44px;height:48px;padding:0 10px;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .08s,filter .08s}
+button:active{transform:scale(.95);filter:brightness(1.3)}
+button.on{background:var(--ok);color:var(--on-primary)}
+button.pri{background:var(--primary);color:var(--on-primary);font-weight:700}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.ic{width:22px;height:22px}
+.info{width:100%;height:auto;min-height:44px;padding:0;background:none;justify-content:space-between;text-align:left;border-radius:8px}
+.info .ic{color:var(--mute);width:18px;height:18px}
+.val{background:none;font-size:26px;font-weight:700}
+.ctl{margin-top:2px}
+input{font:inherit;font-size:18px;font-weight:700;width:52px;height:48px;text-align:center;color:var(--txt);
+  background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:0}
+textarea{width:100%;height:90px;font-size:16px;background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:12px}
+.chips{display:flex;gap:8px;margin-top:12px}
+.chips button{flex:1}
+.chips .sel{background:var(--primary);color:var(--on-primary);font-weight:700}
+.item{width:100%;height:auto;min-height:56px;margin-bottom:10px;padding:12px 14px;border-radius:16px;background:var(--card);text-align:left;gap:8px}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;background:#0b111b;border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;height:56px;border-radius:0;background:none;color:var(--mute)}
+nav .sel{color:var(--primary);font-weight:700}
+/* gráfico */
+.chart{width:100%;height:auto;display:block}
+.ln{fill:none;stroke:var(--primary);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.ar{fill:var(--primary);opacity:.14}
+.dot{fill:var(--card);stroke:var(--primary);stroke-width:3}
+.delta{color:var(--ok)}
+/* tela do exercício */
+#sheet[hidden]{display:none}
+.backdrop{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.6)}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:11;max-height:90vh;overflow:auto;background:var(--card);
+  border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+.imgs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.imgs img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:12px;background:var(--bg)}
+.info.grow{width:auto}
+.open .ic{transform:rotate(90deg)}
+.aq{margin:0 0 4px;padding-left:20px;font-size:15px;color:var(--mute)}
+.aq li{margin:4px 0}
+details{margin-top:10px}
+summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600}
+.rules p{margin:8px 0;font-size:15px;color:var(--mute)}
+.rules b{color:var(--txt)}
+.rules a{color:var(--primary)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .wd{text-align:center;font-size:12px;color:var(--mute);padding:4px 0}
+.cal button{min-width:0;height:48px;padding:0;flex-direction:column;border-radius:10px;font-size:15px;line-height:1.15;background:var(--card)}
+.cal small{font-size:11px;font-weight:700}
+.cal .has{background:var(--ok);color:var(--on-primary);font-weight:700}
+.cal .td{box-shadow:inset 0 0 0 2px var(--primary)}
+.cal .sel{outline:2px solid var(--txt);outline-offset:1px}
+.verdict{color:var(--primary);font-weight:700}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheet" hidden></div>
+<nav>
+  <button data-a="tab" data-v="hoje">Hoje</button>
+  <button data-a="tab" data-v="cal">Calendário</button>
+  <button data-a="tab" data-v="prog">Progresso</button>
+</nav>
+<script src="logic.js"></script>
+<script>
+// bw: exercício sem carga (só marca como feito). s: passo do +/− em kg. r: descanso entre séries. note: dica na tela do exercício.
+const W = {
+  A: { n: "Pernas: quadríceps e glúteo + caminhada", ex: [
+    { id: "smith", n: "Agachamento no Smith", a: "3x8-12", r: "2 min", s: 5 },
+    { id: "legpress", n: "Leg press 45° (pés altos)", a: "3x10-12", r: "2 min", s: 5 },
+    { id: "hipthrust", n: "Hip thrust", a: "3x8-12", r: "2 min", s: 5 },
+    { id: "extensora", n: "Cadeira extensora", a: "3x12-15", r: "60s", s: 5 },
+    { id: "abdutora", n: "Cadeira abdutora", a: "3x12-15", r: "60s", s: 5 },
+    { id: "treadmill", n: "Esteira inclinada (caminhada)", a: "15 min", r: "ritmo leve", bw: 1,
+      note: "Inclinação de 6–10% e velocidade em que ainda dá para conversar. Baixo impacto: queima gordura sem atrapalhar a recuperação das pernas." } ] },
+  B: { n: "Superior: costas, peito, ombros e braços", ex: [
+    { id: "pulldown", n: "Puxada frontal", a: "3x8-12", r: "90s", s: 5 },
+    { id: "chestpress", n: "Supino na máquina", a: "3x8-12", r: "90s", s: 5 },
+    { id: "row", n: "Remada baixa", a: "3x10-12", r: "90s", s: 5 },
+    { id: "shoulder", n: "Desenv. sentado c/ halteres", a: "3x10-12", r: "90s", s: 2 },
+    { id: "lateral", n: "Elevação lateral", a: "3x12-15", r: "60s", s: 1 },
+    { id: "rearfly", n: "Crucifixo inverso (máquina)", a: "2x15", r: "60s", s: 2.5 },
+    { id: "pushdown", n: "Tríceps na polia", a: "2x12", r: "60s", s: 2.5 },
+    { id: "curl", n: "Rosca direta", a: "2x12", r: "60s", s: 2 } ] },
+  C: { n: "Pernas: posterior e glúteo + intervalado", ex: [
+    { id: "rdl", n: "Romanian deadlift (stiff)", a: "3x8-10", r: "2 min", s: 2 },
+    { id: "legcurl", n: "Cadeira flexora", a: "3x10-12", r: "90s", s: 5 },
+    { id: "lunge", n: "Afundo reverso", a: "3x8/perna", r: "90s", s: 2 },
+    { id: "kickback", n: "Coice na polia (glute kickback)", a: "3x12-15/perna", r: "60s", s: 2.5 },
+    { id: "adutora", n: "Cadeira adutora", a: "2x12-15", r: "60s", s: 5 },
+    { id: "calfseat", n: "Panturrilha sentado", a: "3x15", r: "60s", s: 5 },
+    { id: "hiitbike", n: "Intervalado na bike", a: "8x 30s forte", r: "60s leve", bw: 1,
+      note: "Nos 30 s, esforço 8–9/10; nos 60 s, pedale bem leve. Só 12 minutos." } ] }
+};
+
+// Aquecimento (~10 min).
+const PERNAS = ["Bicicleta ou esteira leve, 5 min", "Glute bridge (ponte de glúteo), 2x12", "Cadeira abdutora bem leve, 2x12"];
+const AQ = {
+  A: [...PERNAS, "Agachamento no Smith leve (~50%), 1x10"],
+  B: ["Remo ergométrico ou bike leve, 5 min", "Crucifixo inverso na máquina bem leve, 2x15", "Face pull leve na polia, 2x15", "Puxada frontal leve (~50%), 1x10"],
+  C: [...PERNAS, "Romanian deadlift leve (~50%), 1x10"]
+};
+const MES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+const DIA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+const EX = Object.values(W).flatMap((w) => w.ex);
+const exById = (id) => EX.find((e) => e.id === id);
+
+// Ícones SVG (sem emoji); sempre com aria-label no botão que os usa.
+const ic = (p, w = 3) => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${p}"/></svg>`;
+const I = { check: ic("M5 12.5l4.5 4.5L19 7.5"), minus: ic("M6 12h12"), plus: ic("M12 6v12M6 12h12"), chev: ic("M9 6l6 6-6 6", 2.5), x: ic("M6 6l12 12M18 6L6 18"), up: ic("M12 19V5M6 11l6-6 6 6") };
+
+const KEY = "treino-eli-v1";
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+const db = Object.assign({ bodyweight: [], waist: [], sessions: [], up: {} }, load()); // up: {exercício: dia em que marcou "subir a carga"}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { alert("Não consegui salvar. Libere espaço/ative o armazenamento do Safari."); } };
+
+const pad = (n) => String(n).padStart(2, "0");
+const today = () => { const d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); };
+const fmt = (n) => String(n).replace(".", ",");
+const dm = (d) => d.slice(8) + "/" + d.slice(5, 7);
+const num = (s) => { const v = parseFloat(String(s).replace(",", ".")); return isNaN(v) ? null : Math.round(v * 100) / 100; };
+// Medidas do corpo: peso e cintura (a balança engana quando se ganha músculo e se perde gordura). d = valor inicial do +/−.
+const M = { bodyweight: { n: "Peso", full: "Peso corporal", u: "kg", st: 0.1, d: 60 }, waist: { n: "Cintura", full: "Cintura", u: "cm", st: 0.5, d: 75 } };
+const lastM = (k) => db[k].length ? db[k][db[k].length - 1].v : null;
+const cur = { bodyweight: lastM("bodyweight"), waist: lastM("waist") }; // valor mostrado (salvo ou em edição)
+
+let tab = "hoje";
+let t = Logic.nextTreino(db.sessions, today());
+const draft = {}; // carga editada e ainda não marcada
+let aqOpen = null; // null = automático: aberto até o aquecimento ser feito ou o 1º exercício marcado
+let cal = { y: +today().slice(0, 4), m: +today().slice(5, 7) - 1, sel: today() };
+
+const todays = () => db.sessions.find((s) => s.d === today() && s.t === t);
+const isDone = (id) => !!todays() && todays().kg[id] != null;
+// "Subir a carga": marcado num dia, vale a partir do treino seguinte (carga anterior + um passo).
+const bumped = (id) => !!db.up[id] && db.up[id] < today();
+const curKg = (id) => {
+  if (draft[id] != null) return draft[id];
+  const last = Logic.history(db.sessions, id).slice(-1)[0] ?? null;
+  return last != null && bumped(id) ? Math.round((last + exById(id).s) * 100) / 100 : last;
+};
+
+// Gráfico de linha simples. pts = [{d, v}] em ordem de data.
+function lineChart(pts, unit, label) {
+  if (!pts.length) return `<p class="sub">Ainda sem registros.</p>`;
+  const f = pts[0], l = pts[pts.length - 1];
+  if (pts.length < 2) return `<p class="sub">Atual: <b>${fmt(l.v)} ${unit}</b>. O gráfico aparece a partir do segundo registro.</p>`;
+  const vs = pts.map((p) => p.v), lo = Math.min(...vs), hi = Math.max(...vs);
+  const X = (i) => 14 + (292 * i) / (pts.length - 1);
+  const Y = (v) => (hi === lo ? 60 : 106 - (92 * (v - lo)) / (hi - lo));
+  const line = pts.map((p, i) => X(i).toFixed(1) + "," + Y(p.v).toFixed(1)).join(" ");
+  const area = X(0).toFixed(1) + ",106 " + line + " " + X(pts.length - 1).toFixed(1) + ",106";
+  const dots = pts.map((p, i) => pts.length <= 12 || i === 0 || i === pts.length - 1 ? `<circle class="dot" cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="4"/>` : "").join("");
+  const diff = Math.round((l.v - f.v) * 100) / 100;
+  const delta = diff === 0 ? "igual" : (diff > 0 ? "+" : "−") + fmt(Math.abs(diff)) + " " + unit;
+  return `<svg class="chart" viewBox="0 0 320 120" role="img" aria-label="${label}: de ${fmt(f.v)} para ${fmt(l.v)} ${unit} em ${pts.length} registros">
+    <polygon class="ar" points="${area}"/><polyline class="ln" points="${line}"/>${dots}</svg>
+    <div class="row sub"><span class="grow">${dm(f.d)} · ${fmt(f.v)} ${unit}</span><b class="delta">${delta}</b><span class="grow" style="text-align:right">${dm(l.d)} · ${fmt(l.v)} ${unit}</span></div>`;
+}
+
+const mPts = (k) => db[k].slice(-60).map((e) => ({ d: e.d, v: e.v }));
+
+function hoje() {
+  const doneN = W[t].ex.filter((e) => isDone(e.id)).length;
+  let h = `<h2>Medidas</h2><div class="card">` + Object.keys(M).map((k) => {
+    const m = M[k], v = cur[k], saved = v != null && db[k].some((e) => e.d === today() && e.v === v);
+    return `<div class="row" style="margin:${k === "waist" ? "6px 0 0" : "0"}">
+      <button class="info grow" data-a="info" data-id="${k}" aria-label="Ver histórico: ${m.full}"><span class="name">${m.n}</span>${I.chev}</button>
+      <button data-a="mstep" data-k="${k}" data-v="-1" aria-label="Diminuir ${m.full}">${I.minus}</button>
+      <input style="width:60px" inputmode="decimal" data-a="mtype" data-k="${k}" value="${v == null ? "" : fmt(v.toFixed(1))}" placeholder="${m.u}" aria-label="${m.full} em ${m.u}">
+      <button data-a="mstep" data-k="${k}" data-v="1" aria-label="Aumentar ${m.full}">${I.plus}</button>
+      <button class="${saved ? "on" : "pri"}" data-a="msave" data-k="${k}" aria-pressed="${saved}" aria-label="Salvar ${m.full}">${I.check}</button></div>`;
+  }).join("") + `</div>`;
+  h += `<div class="chips">` + Object.keys(W).map((k) => `<button class="${k === t ? "sel" : ""}" data-a="treino" data-v="${k}" aria-pressed="${k === t}" aria-label="Treino ${k}">${k}</button>`).join("") + `</div>`;
+  h += `<h2><span>${W[t].n}</span><span>${doneN}/${W[t].ex.length}</span></h2>`;
+  const wd = db.warm === today() + t, open = aqOpen ?? (!wd && doneN === 0);
+  h += `<div class="card ex ${wd ? "done" : ""} ${open ? "open" : ""}"><div class="row">
+    <button class="info grow" data-a="aq" aria-expanded="${open}" aria-label="Aquecimento: mostrar ou esconder"><span class="name">Aquecimento · 10 min</span>${I.chev}</button>
+    <button class="${wd ? "on" : ""}" data-a="warm" aria-pressed="${wd}" aria-label="Marcar aquecimento como feito">${I.check}</button></div>`
+    + (open ? `<ul class="aq">${AQ[t].map((x) => `<li>${x}</li>`).join("")}</ul>` : "") + `</div>`;
+  for (const e of W[t].ex) {
+    const done = isDone(e.id), kg = curKg(e.id);
+    const flag = !e.bw && db.up[e.id], tip = flag ? (bumped(e.id) ? `sobe +${fmt(e.s)} kg hoje` : "sobe no próximo treino")
+      : !done && !e.bw && Logic.suggestUp(Logic.history(db.sessions, e.id)) ? `tente +${fmt(e.s)} kg` : "";
+    h += `<div class="card ex ${done ? "done" : ""}"><div class="row">
+      <button class="info grow" data-a="info" data-id="${e.id}" aria-label="Ver ${e.n}: imagem e progressão"><span class="name">${e.n}</span>${I.chev}</button>`
+      + (e.bw ? "" : `<button class="${flag ? "pri" : ""}" data-a="up" data-id="${e.id}" aria-pressed="${!!flag}" aria-label="Aumentar a carga de ${e.n} no próximo treino">${I.up}</button>`) + `</div>
+      <div class="row ctl"><div class="grow sub">${e.a} · ${e.r}${tip ? ` <span class="tip">· ${tip}</span>` : ""}</div>`;
+    if (!e.bw) h += `<button data-a="step" data-id="${e.id}" data-v="-1" aria-label="Diminuir carga de ${e.n}">${I.minus}</button>
+      <input inputmode="decimal" data-a="type" data-id="${e.id}" value="${kg == null ? "" : fmt(kg)}" placeholder="kg" aria-label="Carga de ${e.n} em kg">
+      <button data-a="step" data-id="${e.id}" data-v="1" aria-label="Aumentar carga de ${e.n}">${I.plus}</button>`;
+    h += `<button class="${done ? "on" : ""}" data-a="done" data-id="${e.id}" aria-pressed="${done}" aria-label="Marcar ${e.n} como feito">${I.check}</button></div></div>`;
+  }
+  return h;
+}
+
+function prog() {
+  let h = Object.keys(M).map((k) => `<h2>${M[k].full}</h2><div class="card">${lineChart(mPts(k), M[k].u, M[k].full)}</div>`).join("") + `<h2>Cargas · toque para ver o gráfico</h2>`;
+  for (const e of EX) {
+    if (e.bw) continue;
+    const hs = Logic.history(db.sessions, e.id);
+    if (!hs.length) continue;
+    h += `<button class="item" data-a="info" data-id="${e.id}" aria-label="Ver progressão de ${e.n}"><span class="grow"><span class="name">${e.n}</span><br><span class="sub">${hs.slice(-5).map(fmt).join(" · ")}</span></span>
+      <b>${fmt(hs[0])} → ${fmt(hs[hs.length - 1])}</b>${I.chev}</button>`;
+  }
+  if (!db.sessions.length) h += `<div class="card sub">Nenhum treino registrado ainda.</div>`;
+  h += criterios();
+  const n = db.lastBackup ? Logic.daysBetween(db.lastBackup, today()) : null;
+  const late = n == null || n > 30;
+  const hasData = db.sessions.length || db.bodyweight.length || db.waist.length;
+  h += `<h2>Backup</h2>` + (hasData ? `<div class="sub ${late ? "tip" : ""}" style="margin-bottom:8px">${n == null ? "Você ainda não fez backup" : n === 0 ? "Último backup: hoje" : "Último backup: há " + n + " dias"}${late ? " · copie um agora" : ""}</div>` : "");
+  h += `<div class="card"><button data-a="export" style="width:100%">Copiar backup</button>
+    <textarea id="imp" aria-label="Backup para restaurar" placeholder="Cole aqui um backup para restaurar" style="margin-top:10px"></textarea>
+    <button data-a="import" style="width:100%;margin-top:8px">Restaurar</button></div>`;
+  return h;
+}
+
+// Quando mudar de treino: situação atual (semana do ciclo, exercícios parados) + regras.
+function criterios() {
+  const wk = Logic.weeksSince(db.sessions, today());
+  const stuck = EX.filter((e) => !e.bw && Logic.stalled(Logic.history(db.sessions, e.id))).length;
+  const change = Logic.shouldChange(wk, stuck);
+  return `<h2>Quando mudar de treino</h2><div class="card rules">
+    <div class="row"><span class="grow">Semana <b>${wk || "–"}</b> do ciclo · <b>${stuck}</b> ${stuck === 1 ? "exercício parado" : "exercícios parados"}</span></div>
+    <div class="${change ? "verdict" : "sub"}" style="margin-top:4px">${change ? "Hora de trocar o ciclo ↓" : "Continue neste ciclo."}</div>
+    <details ${change ? "open" : ""}><summary>Ver critérios</summary>
+    <p><b>Subir a carga</b>: fez o topo das reps em todas as séries, com técnica boa e sobrando 1–2 reps → toque na seta ↑ do exercício; no próximo treino a carga já vem maior (ACSM: +2–10%). O app também avisa “tente +” quando a carga repetiu 2 vezes.</p>
+    <p><b>Esforço e descanso</b>: termine as séries com 1–3 reps sobrando. Qualquer faixa de 6–15 reps funciona se você chegar perto da falha (<a href="https://pubmed.ncbi.nlm.nih.gov/28834797/" target="_blank" rel="noopener">Schoenfeld 2017</a>). Descanse ~2 min nos básicos (agachamento, leg press, hip thrust, stiff) e ~1 min nos isoladores.</p>
+    <p><b>Junto com a calistenia</b>: faça a musculação em 3 dias (ex.: seg, qua, sex) e a calistenia em 2 dias diferentes (ex.: ter e sáb). Evite calistenia pesada de pernas no dia anterior ao treino A ou C. Se costas, ombros ou braços estiverem muito cansados no treino B, tire 1 série dos isoladores (rosca, tríceps, elevação lateral) em vez de faltar.</p>
+    <p><b>Perder gordura</b>: vem principalmente da alimentação. Déficit moderado (~300–500 kcal/dia abaixo do que gasta): déficits maiores atrapalham o ganho de músculo (<a href="https://read.qxmd.com/read/34623696/energy-deficiency-impairs-resistance-training-gains-in-lean-mass-but-not-strength-a-meta-analysis-and-meta-regression" target="_blank" rel="noopener">Murphy e Koehler 2022</a>). Proteína ~1,6 g por kg de peso por dia (<a href="https://pubmed.ncbi.nlm.nih.gov/28698222/" target="_blank" rel="noopener">Morton 2018</a>). Caminhe 7–10 mil passos por dia. HIIT e cardio moderado reduzem gordura e cintura de forma parecida (<a href="https://pubmed.ncbi.nlm.nih.gov/28401638/" target="_blank" rel="noopener">Wewege 2017</a>): a caminhada do A e o intervalado do C já bastam. Para um plano alimentar sob medida, procure nutricionista.</p>
+    <p><b>Como acompanhar</b>: meça a cintura 1x por semana (mesmo horário, em jejum). Cintura caindo e cargas subindo = a recomposição está funcionando, mesmo que o peso na balança mude pouco.</p>
+    <p><b>Trocar o ciclo</b>: a partir da semana 12, ou da semana 8 se 3+ exercícios ficaram com a mesma carga nos últimos 3 treinos (“parados”).</p>
+    <p><b>Como trocar</b>: mantenha A/B/C, troque 2–3 exercícios por variações (ex.: agachamento no Smith → hack squat; supino na máquina → supino inclinado com halteres), comece ~10% abaixo da carga e suba de novo.</p>
+    <p><b>Semana leve</b> (metade das séries, ~60% da carga): a cada 6–8 semanas, ou se o cansaço não passa e a carga cai em vários exercícios. Dor articular que não passa: pare o exercício e procure um profissional.</p>
+    <p><b>Base científica</b>: ≥10 séries por semana por músculo favorecem a hipertrofia (Schoenfeld 2017). Homens e mulheres ganham músculo de forma parecida (<a href="https://pubmed.ncbi.nlm.nih.gov/32218059/" target="_blank" rel="noopener">Roberts 2020</a>). Descanso de 2–3 min rende mais que 1 min (<a href="https://pubmed.ncbi.nlm.nih.gov/26605807/" target="_blank" rel="noopener">Schoenfeld 2016</a>). Falha total não é necessária (<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9935748/" target="_blank" rel="noopener">Refalo 2023</a>). Progressão de carga (<a href="https://pubmed.ncbi.nlm.nih.gov/19204579/" target="_blank" rel="noopener">ACSM 2009</a>).</p></details></div>`;
+}
+
+// Calendário do mês + detalhe do dia selecionado (treino feito e cargas).
+function calendario() {
+  const { lead, n } = Logic.monthCells(cal.y, cal.m), ym = cal.y + "-" + pad(cal.m + 1);
+  const by = {};
+  for (const s of db.sessions) if (s.d.startsWith(ym)) (by[s.d] = by[s.d] || []).push(s.t);
+  let h = `<div class="row" style="margin-top:8px"><button data-a="mes" data-v="-1" aria-label="Mês anterior">${I.chev.replace('<svg ', '<svg style="transform:scaleX(-1)" ')}</button>
+    <h3 class="grow" style="text-align:center">${MES[cal.m]} ${cal.y}</h3>
+    <button data-a="mes" data-v="1" aria-label="Próximo mês">${I.chev}</button></div>
+    <div class="sub" style="text-align:center;margin:6px 0 10px">${Object.keys(by).length} dias com treino neste mês</div><div class="cal">`;
+  h += DIA.map((x) => `<div class="wd">${x[0].toUpperCase()}</div>`).join("") + "<div></div>".repeat(lead);
+  for (let i = 1; i <= n; i++) {
+    const d = ym + "-" + pad(i), ts = (by[d] || []).sort().join("");
+    h += `<button class="${ts ? "has" : ""} ${d === today() ? "td" : ""} ${d === cal.sel ? "sel" : ""}" data-a="day" data-v="${d}" aria-label="Dia ${i}${ts ? ", treino " + ts : ""}">${i}${ts ? `<small>${ts}</small>` : ""}</button>`;
+  }
+  h += "</div>";
+  if (cal.sel) {
+    const x = cal.sel, ms = Object.keys(M).map((k) => { const r = db[k].find((e) => e.d === x); return r ? fmt(r.v) + " " + M[k].u : ""; }).filter(Boolean).join(" · ");
+    h += `<h2><span>${DIA[new Date(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8)).getDay()]}, ${dm(x)}</span><span>${ms}</span></h2>`;
+    const ss = db.sessions.filter((s) => s.d === x);
+    if (!ss.length) h += `<div class="card sub">Sem treino neste dia.</div>`;
+    for (const s of ss) { // só ids conhecidos: um backup colado não injeta HTML
+      h += `<div class="card"><div class="name">Treino ${s.t} · ${W[s.t].n}</div>`
+        + W[s.t].ex.filter((e) => s.kg[e.id] != null).map((e) => `<div class="row sub"><span class="grow">${e.n}</span><b>${e.bw ? "feito" : fmt(s.kg[e.id]) + " kg"}</b></div>`).join("") + `</div>`;
+    }
+  }
+  return h;
+}
+
+// Tela do exercício (ou do peso corporal): imagens do movimento + gráfico da progressão.
+function sheetHTML(id) {
+  const e = M[id] ? null : exById(id);
+  const title = e ? e.n : M[id].full;
+  let body;
+  if (e) {
+    const pts = e.bw ? [] : db.sessions.filter((s) => s.kg[id] != null).map((s) => ({ d: s.d, v: s.kg[id] }));
+    body = `<div class="imgs">` + [0, 1].map((i) => `<img src="img/${id}-${i}.jpg" width="360" height="240" alt="${e.n}: ${i ? "posição final" : "posição inicial"}" onerror="this.style.visibility='hidden'">`).join("") + `</div>
+      <div class="sub">Alvo: ${e.a} · descanso ${e.r}</div>` + (e.note ? `<p class="sub">${e.note}</p>` : "") + (e.bw ? "" : `<h4>Progressão da carga</h4>` + lineChart(pts, "kg", title));
+  } else body = `<h4>Histórico</h4>` + lineChart(mPts(id), M[id].u, title);
+  return `<div class="backdrop" data-a="close"></div><section class="sheet" role="dialog" aria-modal="true" aria-label="${title}">
+    <div class="row"><h3 class="grow">${title}</h3><button data-a="close" aria-label="Fechar">${I.x}</button></div>${body}</section>`;
+}
+
+function render() {
+  document.getElementById("app").innerHTML = tab === "hoje" ? hoje() : tab === "cal" ? calendario() : prog();
+  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("sel", b.dataset.v === tab));
+}
+
+// Grava a carga atual do exercício na sessão de hoje (ou remove se já estava feito).
+function setDone(id, on) {
+  const kg = exById(id).bw ? 0 : curKg(id);
+  if (on && kg == null) { // sem carga não marca: leva o foco para digitar
+    document.querySelector(`input[data-id="${id}"]`).focus();
+    return true; // sem re-render (senão o foco some)
+  }
+  Logic.upsert(db.sessions, today(), t, id, on ? kg : null);
+  if (on && bumped(id)) delete db.up[id]; // aumento aplicado
+  delete draft[id];
+  save();
+}
+
+const act = {
+  tab: (d) => { tab = d.v; },
+  treino: (d) => { t = d.v; aqOpen = null; },
+  aq: () => { const wd = db.warm === today() + t, n = W[t].ex.filter((e) => isDone(e.id)).length; aqOpen = !(aqOpen ?? (!wd && n === 0)); },
+  warm: () => { if (db.warm === today() + t) delete db.warm; else db.warm = today() + t; aqOpen = null; save(); },
+  mes: (d) => { cal.m += +d.v; if (cal.m < 0) { cal.m = 11; cal.y--; } else if (cal.m > 11) { cal.m = 0; cal.y++; } cal.sel = null; },
+  day: (d) => { cal.sel = d.v; },
+  mstep: (d) => { const m = M[d.k], c = cur[d.k]; cur[d.k] = c == null ? m.d : Math.round((c + +d.v * m.st) * 10) / 10; }, // 1º toque só mostra o valor inicial
+  mtype: (d, el) => { const v = num(el.value); if (v != null) cur[d.k] = v; },
+  msave: (d) => {
+    if (cur[d.k] == null) return;
+    const e = db[d.k].find((x) => x.d === today());
+    if (e) e.v = cur[d.k]; else db[d.k].push({ d: today(), v: cur[d.k] });
+    save();
+  },
+  step: (d) => {
+    const e = exById(d.id), cur = curKg(d.id) ?? 0;
+    draft[d.id] = Math.max(0, Math.round((cur + +d.v * e.s) * 100) / 100);
+    if (isDone(d.id)) setDone(d.id, true); // já marcado: atualiza direto
+  },
+  type: (d, el) => {
+    const v = num(el.value);
+    if (v == null) return;
+    draft[d.id] = v;
+    if (isDone(d.id)) setDone(d.id, true);
+  },
+  done: (d) => setDone(d.id, !isDone(d.id)),
+  up: (d) => { if (db.up[d.id]) delete db.up[d.id]; else db.up[d.id] = today(); save(); },
+  info: (d) => {
+    const s = document.getElementById("sheet");
+    s.innerHTML = sheetHTML(d.id);
+    s.hidden = false;
+    document.body.classList.add("lock");
+    s.querySelector("button").focus();
+    return true;
+  },
+  close: () => {
+    const s = document.getElementById("sheet");
+    s.hidden = true; s.innerHTML = "";
+    document.body.classList.remove("lock");
+    return true;
+  },
+  export: () => {
+    const s = JSON.stringify(db);
+    (navigator.clipboard ? navigator.clipboard.writeText(s) : Promise.reject()).then(() => { db.lastBackup = today(); save(); alert("Backup copiado. Cole em Notas/WhatsApp."); render(); }, () => { document.getElementById("imp").value = s; alert("Copie o texto da caixa abaixo."); });
+    return true; // sem re-render (preserva o texto)
+  },
+  import: () => {
+    try {
+      const o = JSON.parse(document.getElementById("imp").value);
+      if (!Logic.validBackup(o)) throw 0;
+      if (!confirm("Substituir TODOS os dados atuais por este backup?")) return true;
+      db.sessions = o.sessions; db.bodyweight = o.bodyweight; db.waist = o.waist || []; save(); for (const k in M) cur[k] = lastM(k);
+    } catch (e) { alert("Backup inválido."); return true; }
+  }
+};
+
+document.addEventListener("click", (ev) => {
+  const el = ev.target.closest("button[data-a],.backdrop[data-a]");
+  if (el && !act[el.dataset.a](el.dataset, el)) render();
+});
+document.addEventListener("change", (ev) => {
+  const el = ev.target.closest("input[data-a]");
+  if (el) { act[el.dataset.a](el.dataset, el); render(); }
+});
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") act.close(); });
+
+// O iOS retoma o app em vez de reabri-lo: ao voltar em um dia novo, recalcula o treino e o peso.
+let shownDay = today();
+function refreshIfNewDay() {
+  if (shownDay === today()) return;
+  shownDay = today();
+  t = Logic.nextTreino(db.sessions, shownDay);
+  for (const k in M) cur[k] = lastM(k);
+  aqOpen = null;
+  cal = { y: +shownDay.slice(0, 4), m: +shownDay.slice(5, 7) - 1, sel: shownDay };
+  for (const k in draft) delete draft[k];
+  render();
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshIfNewDay(); });
+
+render();
+if ("serviceWorker" in navigator && /^https:|^http:\/\/localhost/.test(location.href)) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
