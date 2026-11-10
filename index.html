@@ -146,12 +146,16 @@ const I = { check: ic("M5 12.5l4.5 4.5L19 7.5"), minus: ic("M6 12h12"), plus: ic
 
 const KEY = "treino-eli-v1";
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
-const db = Object.assign({ bodyweight: [], waist: [], sessions: [], up: {} }, load()); // up: {exercício: dia em que marcou "subir a carga"}
+const db = Object.assign({ bodyweight: [], waist: [], sessions: [], up: {}, notes: {}, xn: {} }, load()); // up: {exercício: dia em que marcou "subir a carga"}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { alert("Não consegui salvar. Libere espaço/ative o armazenamento do Safari."); } };
 
 const pad = (n) => String(n).padStart(2, "0");
 const today = () => { const d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); };
 const fmt = (n) => String(n).replace(".", ",");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const TAGS = ["Dor", "Difícil", "Fácil", "Não gostei"];
+const PERFIL = "Perfil: mulher adulta (idade, peso, altura e lesões não informados). Objetivos: 1) ganhar massa muscular, 2) perder gordura corporal. Já faz calistenia 2x por semana além da musculação A/B/C. A academia não tem mini bands.";
+const noteKey = () => today() + t; // nota do treino de hoje: "AAAA-MM-DD" + letra
 const dm = (d) => d.slice(8) + "/" + d.slice(5, 7);
 const num = (s) => { const v = parseFloat(String(s).replace(",", ".")); return isNaN(v) ? null : Math.round(v * 100) / 100; };
 // Medidas do corpo: peso e cintura (a balança engana quando se ganha músculo e se perde gordura). d = valor inicial do +/−.
@@ -218,7 +222,7 @@ function hoje() {
     const flag = !e.bw && db.up[e.id], tip = flag ? (bumped(e.id) ? `sobe +${fmt(e.s)} kg hoje` : "sobe no próximo treino")
       : !done && !e.bw && Logic.suggestUp(Logic.history(db.sessions, e.id)) ? `tente +${fmt(e.s)} kg` : "";
     h += `<div class="card ex ${done ? "done" : ""}"><div class="row">
-      <button class="info grow" data-a="info" data-id="${e.id}" aria-label="Ver ${e.n}: imagem e progressão"><span class="name">${e.n}</span>${I.chev}</button>`
+      <button class="info grow" data-a="info" data-id="${e.id}" aria-label="Ver ${e.n}: imagem e progressão"><span class="name">${e.n}${db.xn[e.id] ? ` <span class="tip" aria-label="com nota">●</span>` : ""}</span>${I.chev}</button>`
       + (e.bw ? "" : `<button class="${flag ? "pri" : ""}" data-a="up" data-id="${e.id}" aria-pressed="${!!flag}" aria-label="Aumentar a carga de ${e.n} no próximo treino">${I.up}</button>`) + `</div>
       <div class="row ctl"><div class="grow sub">${e.a} · ${e.r}${tip ? ` <span class="tip">· ${tip}</span>` : ""}</div>`;
     if (!e.bw) h += `<button data-a="step" data-id="${e.id}" data-v="-1" aria-label="Diminuir carga de ${e.n}">${I.minus}</button>
@@ -226,6 +230,7 @@ function hoje() {
       <button data-a="step" data-id="${e.id}" data-v="1" aria-label="Aumentar carga de ${e.n}">${I.plus}</button>`;
     h += `<button class="${done ? "on" : ""}" data-a="done" data-id="${e.id}" aria-pressed="${done}" aria-label="Marcar ${e.n} como feito">${I.check}</button></div></div>`;
   }
+  h += `<h2>Notas do treino</h2><div class="card"><textarea data-a="wnote" aria-label="Notas do treino ${t}" placeholder="Dificuldades, dores, o que não gostou, dúvidas…" style="margin:0">${esc(db.notes[noteKey()] || "")}</textarea></div>`;
   return h;
 }
 
@@ -239,7 +244,7 @@ function prog() {
       <b>${fmt(hs[0])} → ${fmt(hs[hs.length - 1])}</b>${I.chev}</button>`;
   }
   if (!db.sessions.length) h += `<div class="card sub">Nenhum treino registrado ainda.</div>`;
-  h += criterios();
+  h += criterios() + revisao();
   const n = db.lastBackup ? Logic.daysBetween(db.lastBackup, today()) : null;
   const late = n == null || n > 30;
   const hasData = db.sessions.length || db.bodyweight.length || db.waist.length;
@@ -270,6 +275,15 @@ function criterios() {
     <p><b>Base científica</b>: ≥10 séries por semana por músculo favorecem a hipertrofia (Schoenfeld 2017). Homens e mulheres ganham músculo de forma parecida (<a href="https://pubmed.ncbi.nlm.nih.gov/32218059/" target="_blank" rel="noopener">Roberts 2020</a>). Descanso de 2–3 min rende mais que 1 min (<a href="https://pubmed.ncbi.nlm.nih.gov/26605807/" target="_blank" rel="noopener">Schoenfeld 2016</a>). Falha total não é necessária (<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9935748/" target="_blank" rel="noopener">Refalo 2023</a>). Progressão de carga (<a href="https://pubmed.ncbi.nlm.nih.gov/19204579/" target="_blank" rel="noopener">ACSM 2009</a>).</p></details></div>`;
 }
 
+// Revisão: junta programa, cargas e notas num texto para colar no chat e pedir a revisão do treino.
+function revisao() {
+  const n = Logic.notesSince(db, db.lastReport), d = db.lastReport ? Logic.daysBetween(db.lastReport, today()) : null;
+  return `<h2>Revisão do treino</h2><div class="card">
+    <div class="${n ? "verdict" : "sub"}">${n ? n + (n === 1 ? " nota nova" : " notas novas") : "Sem notas novas"} · ${d == null ? "relatório ainda não copiado" : d === 0 ? "relatório copiado hoje" : "último relatório há " + d + " dias"}</div>
+    <p class="sub" style="margin:6px 0 10px">Copie o relatório (programa, cargas, medidas e notas) e cole no chat com o Claude para ele revisar o treino.</p>
+    <button class="pri" data-a="report" style="width:100%">Copiar relatório</button></div>`;
+}
+
 // Calendário do mês + detalhe do dia selecionado (treino feito e cargas).
 function calendario() {
   const { lead, n } = Logic.monthCells(cal.y, cal.m), ym = cal.y + "-" + pad(cal.m + 1);
@@ -289,11 +303,14 @@ function calendario() {
     const x = cal.sel, ms = Object.keys(M).map((k) => { const r = db[k].find((e) => e.d === x); return r ? fmt(r.v) + " " + M[k].u : ""; }).filter(Boolean).join(" · ");
     h += `<h2><span>${DIA[new Date(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8)).getDay()]}, ${dm(x)}</span><span>${ms}</span></h2>`;
     const ss = db.sessions.filter((s) => s.d === x);
-    if (!ss.length) h += `<div class="card sub">Sem treino neste dia.</div>`;
+    const nota = (L) => db.notes[x + L] ? `<div class="sub" style="margin-top:8px">“${esc(db.notes[x + L])}”</div>` : "";
+    const soNota = Logic.ORDER.filter((L) => db.notes[x + L] && !ss.some((s) => s.t === L)); // nota escrita sem nenhum exercício marcado
+    if (!ss.length && !soNota.length) h += `<div class="card sub">Sem treino neste dia.</div>`;
     for (const s of ss) { // só ids conhecidos: um backup colado não injeta HTML
       h += `<div class="card"><div class="name">Treino ${s.t} · ${W[s.t].n}</div>`
-        + W[s.t].ex.filter((e) => s.kg[e.id] != null).map((e) => `<div class="row sub"><span class="grow">${e.n}</span><b>${e.bw ? "feito" : fmt(s.kg[e.id]) + " kg"}</b></div>`).join("") + `</div>`;
+        + W[s.t].ex.filter((e) => s.kg[e.id] != null).map((e) => `<div class="row sub"><span class="grow">${e.n}</span><b>${e.bw ? "feito" : fmt(s.kg[e.id]) + " kg"}</b></div>`).join("") + nota(s.t) + `</div>`;
     }
+    for (const L of soNota) h += `<div class="card"><div class="name">Treino ${L} · só nota</div>${nota(L)}</div>`;
   }
   return h;
 }
@@ -307,6 +324,9 @@ function sheetHTML(id) {
     const pts = e.bw ? [] : db.sessions.filter((s) => s.kg[id] != null).map((s) => ({ d: s.d, v: s.kg[id] }));
     body = `<div class="imgs">` + [0, 1].map((i) => `<img src="img/${id}-${i}.jpg" width="360" height="240" alt="${e.n}: ${i ? "posição final" : "posição inicial"}" onerror="this.style.visibility='hidden'">`).join("") + `</div>
       <div class="sub">Alvo: ${e.a} · descanso ${e.r}</div>` + (e.note ? `<p class="sub">${e.note}</p>` : "") + (e.bw ? "" : `<h4>Progressão da carga</h4>` + lineChart(pts, "kg", title));
+    const x = db.xn[id] || { tags: [], txt: "" };
+    body += `<h4>Como foi?</h4><div class="chips" style="margin-top:0">` + TAGS.map((g) => `<button class="${x.tags.includes(g) ? "sel" : ""}" data-a="xtag" data-id="${id}" data-v="${g}" aria-pressed="${x.tags.includes(g)}">${g}</button>`).join("") + `</div>
+      <textarea data-a="xnote" data-id="${id}" aria-label="Nota sobre ${e.n}" placeholder="Dúvida, dor, ajuste que gostaria…" style="margin-top:8px">${esc(x.txt)}</textarea>`;
   } else body = `<h4>Histórico</h4>` + lineChart(mPts(id), M[id].u, title);
   return `<div class="backdrop" data-a="close"></div><section class="sheet" role="dialog" aria-modal="true" aria-label="${title}">
     <div class="row"><h3 class="grow">${title}</h3><button data-a="close" aria-label="Fechar">${I.x}</button></div>${body}</section>`;
@@ -328,6 +348,15 @@ function setDone(id, on) {
   if (on && bumped(id)) delete db.up[id]; // aumento aplicado
   delete draft[id];
   save();
+}
+
+// Nota de um exercício: {tags, txt, d}. Fica salva enquanto tiver tag ou texto.
+const xnote = (id) => db.xn[id] || (db.xn[id] = { tags: [], txt: "" });
+const xsave = (id) => { const x = db.xn[id]; x.d = today(); if (!x.txt.trim() && !x.tags.length) delete db.xn[id]; save(); };
+
+// Copia para a área de transferência; se o iOS negar, joga o texto na caixa do backup para copiar à mão.
+function copy(s, msg, after) {
+  (navigator.clipboard ? navigator.clipboard.writeText(s) : Promise.reject()).then(() => { after(); save(); alert(msg); render(); }, () => { document.getElementById("imp").value = s; alert("Copie o texto da caixa abaixo."); });
 }
 
 const act = {
@@ -379,17 +408,28 @@ const act = {
     document.body.classList.remove("lock");
     return true;
   },
+  wnote: (d, el) => { const k = noteKey(); if (el.value.trim()) db.notes[k] = el.value; else delete db.notes[k]; save(); return true; },
+  xnote: (d, el) => { const x = xnote(d.id); x.txt = el.value; xsave(d.id); return true; },
+  xtag: (d, el) => { // atualiza só o botão: a tela de baixo é redesenhada pelo clique, a tela do exercício não
+    const x = xnote(d.id), i = x.tags.indexOf(d.v);
+    if (i < 0) x.tags.push(d.v); else x.tags.splice(i, 1);
+    xsave(d.id);
+    el.classList.toggle("sel", i < 0); el.setAttribute("aria-pressed", i < 0);
+  },
   export: () => {
-    const s = JSON.stringify(db);
-    (navigator.clipboard ? navigator.clipboard.writeText(s) : Promise.reject()).then(() => { db.lastBackup = today(); save(); alert("Backup copiado. Cole em Notas/WhatsApp."); render(); }, () => { document.getElementById("imp").value = s; alert("Copie o texto da caixa abaixo."); });
+    copy(JSON.stringify(db), "Backup copiado. Cole em Notas/WhatsApp.", () => { db.lastBackup = today(); });
     return true; // sem re-render (preserva o texto)
+  },
+  report: () => {
+    copy(Logic.report(db, W, today(), PERFIL), "Relatório copiado. Cole no chat com o Claude.", () => { db.lastReport = today(); });
+    return true;
   },
   import: () => {
     try {
       const o = JSON.parse(document.getElementById("imp").value);
       if (!Logic.validBackup(o)) throw 0;
       if (!confirm("Substituir TODOS os dados atuais por este backup?")) return true;
-      db.sessions = o.sessions; db.bodyweight = o.bodyweight; db.waist = o.waist || []; save(); for (const k in M) cur[k] = lastM(k);
+      db.sessions = o.sessions; db.bodyweight = o.bodyweight; db.waist = o.waist || []; db.notes = o.notes || {}; db.xn = o.xn || {}; save(); for (const k in M) cur[k] = lastM(k);
     } catch (e) { alert("Backup inválido."); return true; }
   }
 };
@@ -401,6 +441,10 @@ document.addEventListener("click", (ev) => {
 document.addEventListener("change", (ev) => {
   const el = ev.target.closest("input[data-a]");
   // Sem render aqui: o campo perde o foco quando se toca no ✓, e redesenhar a tela trocaria o botão no meio do toque (o ✓ não era registrado).
+  if (el) act[el.dataset.a](el.dataset, el);
+});
+document.addEventListener("input", (ev) => { // notas salvam a cada letra: nada se perde se o app for fechado
+  const el = ev.target.closest("textarea[data-a]");
   if (el) act[el.dataset.a](el.dataset, el);
 });
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") act.close(); });

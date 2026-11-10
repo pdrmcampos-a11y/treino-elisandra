@@ -51,4 +51,21 @@ assert.deepStrictEqual(L.monthCells(2026, 10), { lead: 0, n: 30 }); // nov/2026 
 assert.deepStrictEqual(L.monthCells(2024, 1), { lead: 4, n: 29 }); // fev/2024 (bissexto) começa na quinta
 assert.deepStrictEqual(L.monthCells(2026, 11), { lead: 2, n: 31 }); // dez/2026 começa na terça
 
+// notas e relatório
+assert.strictEqual(L.validBackup({ sessions: [], bodyweight: [], notes: { "2026-11-09A": "ok" }, xn: { smith: { tags: ["Dor"], txt: "", d: "2026-11-09" } } }), true);
+assert.strictEqual(L.validBackup({ sessions: [], bodyweight: [], notes: { "2026-11-09A": 5 } }), false);
+assert.strictEqual(L.validBackup({ sessions: [], bodyweight: [], xn: { smith: { tags: "Dor", txt: "" } } }), false);
+const nd = { notes: { "2026-11-02A": "velha", "2026-11-09B": "nova" }, xn: { a: { tags: [], txt: "x", d: "2026-11-09" }, b: { tags: [], txt: "", d: "2026-11-09" } } };
+assert.strictEqual(L.notesSince(nd, undefined), 3); // b está vazia e não conta
+assert.strictEqual(L.notesSince(nd, "2026-11-05"), 2);
+assert.strictEqual(L.notesSince({}, undefined), 0);
+const W = { A: { n: "Pernas", ex: [{ id: "g", n: "Smith", a: "3x10" }, { id: "p", n: "Esteira", a: "15 min", bw: 1 }] }, B: { n: "Sup", ex: [] }, C: { n: "Post", ex: [] } };
+const rdb = { sessions: [1, 2, 3].map((i) => ({ d: "2026-11-0" + i, t: "A", kg: { g: 30, p: 0 } })), bodyweight: [{ d: "2026-11-01", v: 65 }, { d: "2026-11-08", v: 64.4 }], waist: [{ d: "2026-11-01", v: 75 }, { d: "2026-11-08", v: 74.5 }],
+  xn: { g: { tags: ["Dor"], txt: "joelho", d: "2026-11-09" }, velho: { tags: ["Dor"], txt: "", d: "2026-11-09" } }, notes: { "2026-11-03A": "difícil" } };
+const rep = L.report(rdb, W, "2026-11-09", "PERFIL");
+assert.ok(rep.includes("- Smith: 30 → 30 → 30 (parado)"));
+assert.ok(rep.includes("- Smith [Dor]: joelho"));
+assert.ok(!rep.includes("velho") && !rep.includes("Esteira:")); // exercício removido e exercício sem carga ficam de fora
+assert.ok(rep.includes("PESO CORPORAL (kg): 65 → 64,4") && rep.includes("CINTURA (cm): 75 → 74,5") && rep.includes("- 2026-11-03 (treino A): difícil") && rep.includes("TREINOS NAS ÚLTIMAS 6 SEMANAS: 3 (A: 3, B: 0, C: 0)"));
+
 console.log("ok");
