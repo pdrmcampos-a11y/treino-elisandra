@@ -338,7 +338,13 @@ const act = {
   mes: (d) => { cal.m += +d.v; if (cal.m < 0) { cal.m = 11; cal.y--; } else if (cal.m > 11) { cal.m = 0; cal.y++; } cal.sel = null; },
   day: (d) => { cal.sel = d.v; },
   mstep: (d) => { const m = M[d.k], c = cur[d.k]; cur[d.k] = c == null ? m.d : Math.round((c + +d.v * m.st) * 10) / 10; }, // 1º toque só mostra o valor inicial
-  mtype: (d, el) => { const v = num(el.value); if (v != null) cur[d.k] = v; },
+  mtype: (d, el) => {
+    const v = num(el.value);
+    if (v != null) cur[d.k] = v;
+    el.value = cur[d.k] == null ? "" : fmt(cur[d.k].toFixed(1));
+    const b = el.closest(".row").querySelector("[data-a=msave]"), saved = cur[d.k] != null && db[d.k].some((e) => e.d === today() && e.v === cur[d.k]);
+    b.className = saved ? "on" : "pri"; b.setAttribute("aria-pressed", saved); // atualiza só o ✓, sem redesenhar
+  },
   msave: (d) => {
     if (cur[d.k] == null) return;
     const e = db[d.k].find((x) => x.d === today());
@@ -352,8 +358,9 @@ const act = {
   },
   type: (d, el) => {
     const v = num(el.value);
-    if (v == null) return;
-    draft[d.id] = v;
+    if (v == null) delete draft[d.id]; else draft[d.id] = v;
+    const k = curKg(d.id);
+    el.value = k == null ? "" : fmt(k); // campo vazio/inválido volta ao valor que será salvo
     if (isDone(d.id)) setDone(d.id, true);
   },
   done: (d) => setDone(d.id, !isDone(d.id)),
@@ -393,7 +400,8 @@ document.addEventListener("click", (ev) => {
 });
 document.addEventListener("change", (ev) => {
   const el = ev.target.closest("input[data-a]");
-  if (el) { act[el.dataset.a](el.dataset, el); render(); }
+  // Sem render aqui: o campo perde o foco quando se toca no ✓, e redesenhar a tela trocaria o botão no meio do toque (o ✓ não era registrado).
+  if (el) act[el.dataset.a](el.dataset, el);
 });
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") act.close(); });
 
