@@ -63,9 +63,20 @@ const W = { A: { n: "Pernas", ex: [{ id: "g", n: "Smith", a: "3x10" }, { id: "p"
 const rdb = { sessions: [1, 2, 3].map((i) => ({ d: "2026-11-0" + i, t: "A", kg: { g: 30, p: 0 } })), bodyweight: [{ d: "2026-11-01", v: 65 }, { d: "2026-11-08", v: 64.4 }], waist: [{ d: "2026-11-01", v: 75 }, { d: "2026-11-08", v: 74.5 }],
   xn: { g: { tags: ["Dor"], txt: "joelho", d: "2026-11-09" }, velho: { tags: ["Dor"], txt: "", d: "2026-11-09" } }, notes: { "2026-11-03A": "difícil" } };
 const rep = L.report(rdb, W, "2026-11-09", "PERFIL");
-assert.ok(rep.includes("- Smith: 30 → 30 → 30 (parado)"));
+assert.ok(rep.includes("- Smith (kg): 30 → 30 → 30 (parado)"));
 assert.ok(rep.includes("- Smith [Dor]: joelho"));
 assert.ok(!rep.includes("velho") && !rep.includes("Esteira:")); // exercício removido e exercício sem carga ficam de fora
 assert.ok(rep.includes("PESO CORPORAL (kg): 65 → 64,4") && rep.includes("CINTURA (cm): 75 → 74,5") && rep.includes("- 2026-11-03 (treino A): difícil") && rep.includes("TREINOS NAS ÚLTIMAS 6 SEMANAS: 3 (A: 3, B: 0, C: 0)"));
+
+// treino extra (K) e cronômetro
+assert.strictEqual(L.nextTreino([{ d: "2026-11-09", t: "A", kg: { x: 1 } }, { d: "2026-11-10", t: "K", kg: { x: 1 } }], "2026-11-11"), "B"); // K não pula a sequência
+assert.strictEqual(L.nextTreino([{ d: "2026-11-09", t: "A", kg: { x: 1 } }, { d: "2026-11-09", t: "K", kg: { x: 1 } }], "2026-11-09"), "A"); // K no mesmo dia: segue em A
+assert.strictEqual(L.nextTreino([{ d: "2026-11-10", t: "K", kg: { x: 1 } }], "2026-11-11"), "A");
+assert.strictEqual(L.validBackup({ sessions: [{ d: "2026-11-09", t: "K", kg: { pushup: 12 } }], bodyweight: [] }), true);
+assert.strictEqual(L.validBackup({ sessions: [{ d: "2026-11-09", t: "F", kg: {} }], bodyweight: [] }), false);
+assert.deepStrictEqual(["90s", "2 min", "60s leve", "3 min leve", "45s", "ritmo leve", "", undefined].map(L.restSecs), [90, 120, 60, 180, 45, null, null, null]);
+const rw = { A: { n: "P", ex: [{ id: "m", n: "Flexão", a: "x", u: "reps" }] }, K: { n: "Cali", ex: [] } };
+const rr = L.report({ sessions: [1, 2].map((i) => ({ d: "2026-11-0" + i, t: "K", kg: { m: 12 } })), bodyweight: [] }, rw, "2026-11-09", "P");
+assert.ok(rr.includes("- Flexão (reps): 12 → 12") && rr.includes("K (Cali)") && rr.includes("K: 2"));
 
 console.log("ok");

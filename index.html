@@ -53,7 +53,7 @@ textarea{width:100%;height:90px;font-size:16px;background:var(--bg);color:var(--
 .item{width:100%;height:auto;min-height:56px;margin-bottom:10px;padding:12px 14px;border-radius:16px;background:var(--card);text-align:left;gap:8px}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;background:#0b111b;border-top:1px solid var(--line);
   padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;height:56px;border-radius:0;background:none;color:var(--mute)}
+nav button{flex:1;height:56px;border-radius:0;background:none;color:var(--mute);font-size:15px;gap:6px}
 nav .sel{color:var(--primary);font-weight:700}
 /* gráfico */
 .chart{width:100%;height:auto;display:block}
@@ -85,18 +85,36 @@ summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weig
 .cal .td{box-shadow:inset 0 0 0 2px var(--primary)}
 .cal .sel{outline:2px solid var(--txt);outline-offset:1px}
 .verdict{color:var(--primary);font-weight:700}
+#tmnav.run{color:var(--primary);font-weight:700}
+#tmnav.fim{color:var(--ok);font-weight:700}
+#tmpanel[hidden]{display:none}
+#tmpanel{position:fixed;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom));z-index:6;padding:0 8px 8px}
+.tmbox{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:0 -8px 24px rgba(0,0,0,.45)}
+#tmpanel.fim .tmbox{box-shadow:inset 0 0 0 3px var(--ok)}
+.tmtime{font-size:56px;font-weight:700;text-align:center;line-height:1.1;margin:8px 0}
+.seg{display:flex;gap:4px;background:var(--bg);border-radius:12px;padding:4px}
+.seg button{flex:1;height:40px;background:none;border-radius:8px}
+.seg .sel{background:var(--primary);color:var(--on-primary);font-weight:700}
+.tmchips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.tmchips[hidden],#tmadd[hidden]{display:none}
+.tmchips button{min-width:0;padding:0}
+.rest{height:44px;padding:0 10px;gap:4px;font-size:14px;color:var(--mute)}
+.rest .ic{width:18px;height:18px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div id="sheet" hidden></div>
+<div id="tmpanel" hidden></div>
 <nav>
   <button data-a="tab" data-v="hoje">Hoje</button>
   <button data-a="tab" data-v="cal">Calendário</button>
   <button data-a="tab" data-v="prog">Progresso</button>
+  <button id="tmnav" data-tm="toggle" aria-label="Cronômetro"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg><span>Timer</span></button>
 </nav>
 <script src="logic.js"></script>
+<script src="timer.js"></script>
 <script>
 // bw: exercício sem carga (só marca como feito). s: passo do +/− em kg. r: descanso entre séries. note: dica na tela do exercício.
 const W = {
@@ -125,7 +143,23 @@ const W = {
     { id: "adutora", n: "Cadeira adutora", a: "2x12-15", r: "60s", s: 5 },
     { id: "calfseat", n: "Panturrilha sentado", a: "3x15", r: "60s", s: 5 },
     { id: "hiitbike", n: "Intervalado na bike", a: "8x 30s forte", r: "60s leve", bw: 1,
-      note: "Nos 30 s, esforço 8–9/10; nos 60 s, pedale bem leve. Só 12 minutos." } ] }
+      note: "Nos 30 s, esforço 8–9/10; nos 60 s, pedale bem leve. Só 12 minutos." } ] },
+  K: { n: "Calistenia (corpo todo)", chip: "CAL", ex: [
+    { id: "pushup", n: "Flexão de braço", a: "3 séries de 6–15", r: "90s", u: "reps", s: 1,
+      note: "Registre as reps da sua melhor série, parando com 1–2 sobrando. Progressão: inclinada (mãos no banco) → joelhos no chão → normal → pés elevados → archer. Quando fizer 15 reps nas 3 séries com folga, passe para a variação seguinte e recomece perto de 8." },
+    { id: "invrow", n: "Remada invertida (australiana)", a: "3 séries de 8–12", r: "90s", u: "reps", s: 1,
+      note: "Barra baixa (ou Smith) na altura da cintura; corpo reto, puxe o peito até a barra. Mais difícil: pés mais à frente ou elevados." },
+    { id: "pullup", n: "Barra fixa (ou assistida/negativa)", a: "3 séries de 3–8", r: "2 min", u: "reps", s: 1,
+      note: "Se ainda não faz uma barra completa: use a máquina de barra assistida, ou faça negativas (suba com ajuda de um banco e desça em 5 s). Registre as reps da melhor série." },
+    { id: "bulg", n: "Agachamento búlgaro (pé de trás no banco)", a: "3 séries de 8–12/perna", r: "90s", u: "reps", s: 1,
+      note: "Registre as reps por perna. Tronco levemente inclinado para a frente para pegar mais glúteo; joelho da frente alinhado com o pé." },
+    { id: "bridge1", n: "Elevação pélvica unilateral", a: "3 séries de 12–15/perna", r: "60s", u: "reps", s: 1 },
+    { id: "dips", n: "Mergulho (paralelas ou banco)", a: "3 séries de 6–12", r: "90s", u: "reps", s: 1,
+      note: "No banco, com os pés no chão, é mais fácil; nas paralelas, mais difícil. Desça só até os cotovelos em 90° para poupar o ombro." },
+    { id: "legraise", n: "Elevação de pernas (deitada ou suspensa)", a: "3 séries de 10–15", r: "60s", u: "reps", s: 1 },
+    { id: "plankcal", n: "Prancha", a: "3 séries de 30–60 s", r: "45s", u: "s", s: 5 },
+    { id: "circ", n: "Circuito final (opcional)", a: "3 rodadas", r: "30s", bw: 1,
+      note: "30 s de mountain climbers + 30 s de polichinelo + 30 s de descanso, 3 rodadas. Ajuda no gasto de energia sem pesar nas pernas." } ] }
 };
 
 // Aquecimento (~10 min).
@@ -133,7 +167,8 @@ const PERNAS = ["Bicicleta ou esteira leve, 5 min", "Glute bridge (ponte de glú
 const AQ = {
   A: [...PERNAS, "Agachamento no Smith leve (~50%), 1x10"],
   B: ["Remo ergométrico ou bike leve, 5 min", "Crucifixo inverso na máquina bem leve, 2x15", "Face pull leve na polia, 2x15", "Puxada frontal leve (~50%), 1x10"],
-  C: [...PERNAS, "Romanian deadlift leve (~50%), 1x10"]
+  C: [...PERNAS, "Romanian deadlift leve (~50%), 1x10"],
+  K: ["Polichinelos ou corrida leve, 3 min", "Círculos de ombro e flexão escapular, 2x10", "Agachamento profundo com pausa e mobilidade de quadril, 1 min", "Flexão inclinada leve, 1x8"]
 };
 const MES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const DIA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -142,7 +177,7 @@ const exById = (id) => EX.find((e) => e.id === id);
 
 // Ícones SVG (sem emoji); sempre com aria-label no botão que os usa.
 const ic = (p, w = 3) => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${p}"/></svg>`;
-const I = { check: ic("M5 12.5l4.5 4.5L19 7.5"), minus: ic("M6 12h12"), plus: ic("M12 6v12M6 12h12"), chev: ic("M9 6l6 6-6 6", 2.5), x: ic("M6 6l12 12M18 6L6 18"), up: ic("M12 19V5M6 11l6-6 6 6") };
+const I = { check: ic("M5 12.5l4.5 4.5L19 7.5"), minus: ic("M6 12h12"), plus: ic("M12 6v12M6 12h12"), chev: ic("M9 6l6 6-6 6", 2.5), x: ic("M6 6l12 12M18 6L6 18"), up: ic("M12 19V5M6 11l6-6 6 6"), clock: ic("M12 7v5l3 2M12 21a9 9 0 100-18 9 9 0 000 18z", 2.5) };
 
 const KEY = "treino-eli-v1";
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
@@ -155,6 +190,7 @@ const fmt = (n) => String(n).replace(".", ",");
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const TAGS = ["Dor", "Difícil", "Fácil", "Não gostei"];
 const PERFIL = "Perfil: mulher adulta (idade, peso, altura e lesões não informados). Objetivos: 1) ganhar massa muscular, 2) perder gordura corporal. Já faz calistenia 2x por semana além da musculação A/B/C. A academia não tem mini bands.";
+const rlab = (s) => (s >= 120 && s % 60 === 0 ? s / 60 + " min" : s + "s");
 const noteKey = () => today() + t; // nota do treino de hoje: "AAAA-MM-DD" + letra
 const dm = (d) => d.slice(8) + "/" + d.slice(5, 7);
 const num = (s) => { const v = parseFloat(String(s).replace(",", ".")); return isNaN(v) ? null : Math.round(v * 100) / 100; };
@@ -210,23 +246,25 @@ function hoje() {
       <button data-a="mstep" data-k="${k}" data-v="1" aria-label="Aumentar ${m.full}">${I.plus}</button>
       <button class="${saved ? "on" : "pri"}" data-a="msave" data-k="${k}" aria-pressed="${saved}" aria-label="Salvar ${m.full}">${I.check}</button></div>`;
   }).join("") + `</div>`;
-  h += `<div class="chips">` + Object.keys(W).map((k) => `<button class="${k === t ? "sel" : ""}" data-a="treino" data-v="${k}" aria-pressed="${k === t}" aria-label="Treino ${k}">${k}</button>`).join("") + `</div>`;
+  h += `<div class="chips">` + Object.keys(W).map((k) => `<button class="${k === t ? "sel" : ""}" data-a="treino" data-v="${k}" aria-pressed="${k === t}" aria-label="${W[k].chip ? W[k].n : "Treino " + k}">${W[k].chip || k}</button>`).join("") + `</div>`;
   h += `<h2><span>${W[t].n}</span><span>${doneN}/${W[t].ex.length}</span></h2>`;
   const wd = db.warm === today() + t, open = aqOpen ?? (!wd && doneN === 0);
   h += `<div class="card ex ${wd ? "done" : ""} ${open ? "open" : ""}"><div class="row">
     <button class="info grow" data-a="aq" aria-expanded="${open}" aria-label="Aquecimento: mostrar ou esconder"><span class="name">Aquecimento · 10 min</span>${I.chev}</button>
+    <button class="rest" data-tm-go="600" aria-label="Cronometrar 10 minutos de aquecimento">${I.clock}10 min</button>
     <button class="${wd ? "on" : ""}" data-a="warm" aria-pressed="${wd}" aria-label="Marcar aquecimento como feito">${I.check}</button></div>`
     + (open ? `<ul class="aq">${AQ[t].map((x) => `<li>${x}</li>`).join("")}</ul>` : "") + `</div>`;
   for (const e of W[t].ex) {
     const done = isDone(e.id), kg = curKg(e.id);
-    const flag = !e.bw && db.up[e.id], tip = flag ? (bumped(e.id) ? `sobe +${fmt(e.s)} kg hoje` : "sobe no próximo treino")
-      : !done && !e.bw && Logic.suggestUp(Logic.history(db.sessions, e.id)) ? `tente +${fmt(e.s)} kg` : "";
+    const u = e.u || "kg", secs = Logic.restSecs(e.r), flag = !e.bw && !e.nu && db.up[e.id], tip = flag ? (bumped(e.id) ? `sobe +${fmt(e.s)} ${u} hoje` : "sobe no próximo treino")
+      : !done && !e.bw && !e.nu && Logic.suggestUp(Logic.history(db.sessions, e.id)) ? `tente +${fmt(e.s)} ${u}` : "";
     h += `<div class="card ex ${done ? "done" : ""}"><div class="row">
       <button class="info grow" data-a="info" data-id="${e.id}" aria-label="Ver ${e.n}: imagem e progressão"><span class="name">${e.n}${db.xn[e.id] ? ` <span class="tip" aria-label="com nota">●</span>` : ""}</span>${I.chev}</button>`
-      + (e.bw ? "" : `<button class="${flag ? "pri" : ""}" data-a="up" data-id="${e.id}" aria-pressed="${!!flag}" aria-label="Aumentar a carga de ${e.n} no próximo treino">${I.up}</button>`) + `</div>
-      <div class="row ctl"><div class="grow sub">${e.a} · ${e.r}${tip ? ` <span class="tip">· ${tip}</span>` : ""}</div>`;
+      + (secs ? `<button class="rest" data-tm-go="${secs}" aria-label="Cronometrar descanso de ${rlab(secs)}">${I.clock}${rlab(secs)}</button>` : "")
+      + (e.bw || e.nu ? "" : `<button class="${flag ? "pri" : ""}" data-a="up" data-id="${e.id}" aria-pressed="${!!flag}" aria-label="Aumentar a carga de ${e.n} no próximo treino">${I.up}</button>`) + `</div>
+      <div class="row ctl"><div class="grow sub">${e.a}${e.r ? " · " + e.r : ""}${tip ? ` <span class="tip">· ${tip}</span>` : ""}</div>`;
     if (!e.bw) h += `<button data-a="step" data-id="${e.id}" data-v="-1" aria-label="Diminuir carga de ${e.n}">${I.minus}</button>
-      <input inputmode="decimal" data-a="type" data-id="${e.id}" value="${kg == null ? "" : fmt(kg)}" placeholder="kg" aria-label="Carga de ${e.n} em kg">
+      <input inputmode="decimal" data-a="type" data-id="${e.id}" value="${kg == null ? "" : fmt(kg)}" placeholder="${u}" aria-label="${e.u ? "Registro" : "Carga"} de ${e.n} em ${u}">
       <button data-a="step" data-id="${e.id}" data-v="1" aria-label="Aumentar carga de ${e.n}">${I.plus}</button>`;
     h += `<button class="${done ? "on" : ""}" data-a="done" data-id="${e.id}" aria-pressed="${done}" aria-label="Marcar ${e.n} como feito">${I.check}</button></div></div>`;
   }
@@ -258,7 +296,7 @@ function prog() {
 // Quando mudar de treino: situação atual (semana do ciclo, exercícios parados) + regras.
 function criterios() {
   const wk = Logic.weeksSince(db.sessions, today());
-  const stuck = EX.filter((e) => !e.bw && Logic.stalled(Logic.history(db.sessions, e.id))).length;
+  const stuck = EX.filter((e) => !e.bw && !e.nu && Logic.stalled(Logic.history(db.sessions, e.id))).length;
   const change = Logic.shouldChange(wk, stuck);
   return `<h2>Quando mudar de treino</h2><div class="card rules">
     <div class="row"><span class="grow">Semana <b>${wk || "–"}</b> do ciclo · <b>${stuck}</b> ${stuck === 1 ? "exercício parado" : "exercícios parados"}</span></div>
@@ -266,7 +304,7 @@ function criterios() {
     <details ${change ? "open" : ""}><summary>Ver critérios</summary>
     <p><b>Subir a carga</b>: fez o topo das reps em todas as séries, com técnica boa e sobrando 1–2 reps → toque na seta ↑ do exercício; no próximo treino a carga já vem maior (ACSM: +2–10%). O app também avisa “tente +” quando a carga repetiu 2 vezes.</p>
     <p><b>Esforço e descanso</b>: termine as séries com 1–3 reps sobrando. Qualquer faixa de 6–15 reps funciona se você chegar perto da falha (<a href="https://pubmed.ncbi.nlm.nih.gov/28834797/" target="_blank" rel="noopener">Schoenfeld 2017</a>). Descanse ~2 min nos básicos (agachamento, leg press, hip thrust, stiff) e ~1 min nos isoladores.</p>
-    <p><b>Junto com a calistenia</b>: faça a musculação em 3 dias (ex.: seg, qua, sex) e a calistenia em 2 dias diferentes (ex.: ter e sáb). Evite calistenia pesada de pernas no dia anterior ao treino A ou C. Se costas, ombros ou braços estiverem muito cansados no treino B, tire 1 série dos isoladores (rosca, tríceps, elevação lateral) em vez de faltar.</p>
+    <p><b>Junto com a calistenia</b>: faça a musculação em 3 dias (ex.: seg, qua, sex) e a calistenia em 2 dias diferentes (ex.: ter e sáb), usando o treino CAL do app e registrando as repetições. Com o peso do corpo a hipertrofia também funciona se a série chegar perto da falha; quando passar de 15 reps com folga, use uma variação mais difícil. Evite calistenia pesada de pernas no dia anterior ao treino A ou C. Se costas, ombros ou braços estiverem muito cansados no treino B, tire 1 série dos isoladores (rosca, tríceps, elevação lateral) em vez de faltar.</p>
     <p><b>Perder gordura</b>: vem principalmente da alimentação. Déficit moderado (~300–500 kcal/dia abaixo do que gasta): déficits maiores atrapalham o ganho de músculo (<a href="https://read.qxmd.com/read/34623696/energy-deficiency-impairs-resistance-training-gains-in-lean-mass-but-not-strength-a-meta-analysis-and-meta-regression" target="_blank" rel="noopener">Murphy e Koehler 2022</a>). Proteína ~1,6 g por kg de peso por dia (<a href="https://pubmed.ncbi.nlm.nih.gov/28698222/" target="_blank" rel="noopener">Morton 2018</a>). Caminhe 7–10 mil passos por dia. HIIT e cardio moderado reduzem gordura e cintura de forma parecida (<a href="https://pubmed.ncbi.nlm.nih.gov/28401638/" target="_blank" rel="noopener">Wewege 2017</a>): a caminhada do A e o intervalado do C já bastam. Para um plano alimentar sob medida, procure nutricionista.</p>
     <p><b>Como acompanhar</b>: meça a cintura 1x por semana (mesmo horário, em jejum). Cintura caindo e cargas subindo = a recomposição está funcionando, mesmo que o peso na balança mude pouco.</p>
     <p><b>Trocar o ciclo</b>: a partir da semana 12, ou da semana 8 se 3+ exercícios ficaram com a mesma carga nos últimos 3 treinos (“parados”).</p>
@@ -308,7 +346,7 @@ function calendario() {
     if (!ss.length && !soNota.length) h += `<div class="card sub">Sem treino neste dia.</div>`;
     for (const s of ss) { // só ids conhecidos: um backup colado não injeta HTML
       h += `<div class="card"><div class="name">Treino ${s.t} · ${W[s.t].n}</div>`
-        + W[s.t].ex.filter((e) => s.kg[e.id] != null).map((e) => `<div class="row sub"><span class="grow">${e.n}</span><b>${e.bw ? "feito" : fmt(s.kg[e.id]) + " kg"}</b></div>`).join("") + nota(s.t) + `</div>`;
+        + W[s.t].ex.filter((e) => s.kg[e.id] != null).map((e) => `<div class="row sub"><span class="grow">${e.n}</span><b>${e.bw ? "feito" : fmt(s.kg[e.id]) + " " + (e.u || "kg")}</b></div>`).join("") + nota(s.t) + `</div>`;
     }
     for (const L of soNota) h += `<div class="card"><div class="name">Treino ${L} · só nota</div>${nota(L)}</div>`;
   }
@@ -322,8 +360,7 @@ function sheetHTML(id) {
   let body;
   if (e) {
     const pts = e.bw ? [] : db.sessions.filter((s) => s.kg[id] != null).map((s) => ({ d: s.d, v: s.kg[id] }));
-    body = `<div class="imgs">` + [0, 1].map((i) => `<img src="img/${id}-${i}.jpg" width="360" height="240" alt="${e.n}: ${i ? "posição final" : "posição inicial"}" onerror="this.style.visibility='hidden'">`).join("") + `</div>
-      <div class="sub">Alvo: ${e.a} · descanso ${e.r}</div>` + (e.note ? `<p class="sub">${e.note}</p>` : "") + (e.bw ? "" : `<h4>Progressão da carga</h4>` + lineChart(pts, "kg", title));
+    body = (e.noimg ? "" : `<div class="imgs">` + [0, 1].map((i) => `<img src="img/${id}-${i}.jpg" width="360" height="240" alt="${e.n}: ${i ? "posição final" : "posição inicial"}" onerror="this.style.visibility='hidden'">`).join("") + `</div>`) + `<div class="sub">Alvo: ${e.a}${e.r ? " · descanso " + e.r : ""}</div>` + (e.note ? `<p class="sub">${e.note}</p>` : "") + (e.bw ? "" : `<h4>Progressão da carga</h4>` + lineChart(pts, e.u || "kg", title));
     const x = db.xn[id] || { tags: [], txt: "" };
     body += `<h4>Como foi?</h4><div class="chips" style="margin-top:0">` + TAGS.map((g) => `<button class="${x.tags.includes(g) ? "sel" : ""}" data-a="xtag" data-id="${id}" data-v="${g}" aria-pressed="${x.tags.includes(g)}">${g}</button>`).join("") + `</div>
       <textarea data-a="xnote" data-id="${id}" aria-label="Nota sobre ${e.n}" placeholder="Dúvida, dor, ajuste que gostaria…" style="margin-top:8px">${esc(x.txt)}</textarea>`;
@@ -463,6 +500,7 @@ function refreshIfNewDay() {
 }
 document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshIfNewDay(); });
 
+Timer.init("treino-eli-timer");
 render();
 if ("serviceWorker" in navigator && /^https:|^http:\/\/localhost/.test(location.href)) navigator.serviceWorker.register("sw.js");
 </script>

@@ -1,10 +1,11 @@
 // Lógica pura (sem DOM) para poder testar no Node.
 (function (root) {
-  const ORDER = ["A", "B", "C"];
+  const ORDER = ["A", "B", "C"]; // ciclo de musculação
+  const ALL = [...ORDER, "K"]; // K = calistenia: treino extra, fora do ciclo
 
   // Treino do dia: o que já está em andamento hoje, senão o próximo da sequência A→B→C.
   function nextTreino(sessions, today) {
-    const last = sessions[sessions.length - 1];
+    const last = sessions.filter((s) => ORDER.includes(s.t)).pop(); // treinos extras não mexem na sequência
     if (!last) return "A";
     if (last.d === today) return last.t;
     return ORDER[(ORDER.indexOf(last.t) + 1) % ORDER.length];
@@ -38,7 +39,7 @@
   const okDate = (d) => typeof d === "string" && /^\d{4}-\d\d-\d\d$/.test(d);
   function validBackup(o) {
     return !!o && Array.isArray(o.sessions) && Array.isArray(o.bodyweight)
-      && o.sessions.every((s) => s && okDate(s.d) && ORDER.includes(s.t) && s.kg && typeof s.kg === "object"
+      && o.sessions.every((s) => s && okDate(s.d) && ALL.includes(s.t) && s.kg && typeof s.kg === "object"
         && Object.values(s.kg).every(Number.isFinite))
       && [o.bodyweight, o.waist || []].every((l) => Array.isArray(l) && l.every((e) => e && okDate(e.d) && Number.isFinite(e.v)))
       && (o.notes === undefined || (!!o.notes && typeof o.notes === "object" && Object.values(o.notes).every((v) => typeof v === "string")))
@@ -75,11 +76,11 @@
     const ex = Object.values(W).flatMap((w) => w.ex), byId = (id) => ex.find((e) => e.id === id);
     const recent = db.sessions.filter((s) => daysBetween(s.d, today) <= 42);
     const L = [`RELATÓRIO DE TREINO · ${today} · semana ${weeksSince(db.sessions, today)} do ciclo`, perfil, "", "PROGRAMA ATUAL"];
-    for (const k of ORDER) L.push(`${k} (${W[k].n}): ` + W[k].ex.map((e) => `${e.n} ${e.a}`).join("; "));
-    L.push("", `TREINOS NAS ÚLTIMAS 6 SEMANAS: ${recent.length} (` + ORDER.map((k) => `${k}: ${recent.filter((s) => s.t === k).length}`).join(", ") + ")", "", "CARGAS EM KG (da mais antiga para a mais recente)");
+    for (const k of Object.keys(W)) L.push(`${k} (${W[k].n}): ` + W[k].ex.map((e) => `${e.n} ${e.a}`).join("; "));
+    L.push("", `TREINOS NAS ÚLTIMAS 6 SEMANAS: ${recent.length} (` + Object.keys(W).map((k) => `${k}: ${recent.filter((s) => s.t === k).length}`).join(", ") + ")", "", "REGISTROS (kg, ou a unidade indicada; do mais antigo para o mais recente)");
     for (const e of ex) {
       const h = history(db.sessions, e.id);
-      if (!e.bw && h.length) L.push(`- ${e.n}: ${h.slice(-6).map(f).join(" → ")}${stalled(h) ? " (parado)" : ""}`);
+      if (!e.bw && h.length) L.push(`- ${e.n} (${e.u || "kg"}): ${h.slice(-6).map(f).join(" → ")}${!e.nu && stalled(h) ? " (parado)" : ""}`);
     }
     for (const [k, nome, u] of [["bodyweight", "PESO CORPORAL", "kg"], ["waist", "CINTURA", "cm"]]) {
       if ((db[k] || []).length) L.push("", `${nome} (${u}): ` + db[k].slice(-6).map((e) => f(e.v)).join(" → "));
@@ -95,7 +96,10 @@
     return L.join("\n");
   }
 
-  const api = { ORDER, nextTreino, history, suggestUp, upsert, validBackup, daysBetween, weeksSince, stalled, shouldChange, monthCells, notesSince, report };
+  // Segundos de um descanso escrito como "90s", "2 min" ou "60s leve"; null se não for um tempo ("ritmo leve").
+  const restSecs = (r) => { const m = /^(\d+)\s*(min|s)\b/.exec(r || ""); return m ? +m[1] * (m[2] === "min" ? 60 : 1) : null; };
+
+  const api = { ORDER, ALL, restSecs, nextTreino, history, suggestUp, upsert, validBackup, daysBetween, weeksSince, stalled, shouldChange, monthCells, notesSince, report };
   if (typeof module !== "undefined") module.exports = api;
   else root.Logic = api;
 })(typeof self !== "undefined" ? self : this);
