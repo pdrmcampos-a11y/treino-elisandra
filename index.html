@@ -144,22 +144,11 @@ const W = {
     { id: "calfseat", n: "Panturrilha sentado", a: "3x15", r: "60s", s: 5 },
     { id: "hiitbike", n: "Intervalado na bike", a: "8x 30s forte", r: "60s leve", bw: 1,
       note: "Nos 30 s, esforço 8–9/10; nos 60 s, pedale bem leve. Só 12 minutos." } ] },
-  K: { n: "Calistenia (corpo todo)", chip: "CAL", ex: [
-    { id: "pushup", n: "Flexão de braço", a: "3 séries de 6–15", r: "90s", u: "reps", s: 1,
-      note: "Registre as reps da sua melhor série, parando com 1–2 sobrando. Progressão: inclinada (mãos no banco) → joelhos no chão → normal → pés elevados → archer. Quando fizer 15 reps nas 3 séries com folga, passe para a variação seguinte e recomece perto de 8." },
-    { id: "invrow", n: "Remada invertida (australiana)", a: "3 séries de 8–12", r: "90s", u: "reps", s: 1,
-      note: "Barra baixa (ou Smith) na altura da cintura; corpo reto, puxe o peito até a barra. Mais difícil: pés mais à frente ou elevados." },
-    { id: "pullup", n: "Barra fixa (ou assistida/negativa)", a: "3 séries de 3–8", r: "2 min", u: "reps", s: 1,
-      note: "Se ainda não faz uma barra completa: use a máquina de barra assistida, ou faça negativas (suba com ajuda de um banco e desça em 5 s). Registre as reps da melhor série." },
-    { id: "bulg", n: "Agachamento búlgaro (pé de trás no banco)", a: "3 séries de 8–12/perna", r: "90s", u: "reps", s: 1,
-      note: "Registre as reps por perna. Tronco levemente inclinado para a frente para pegar mais glúteo; joelho da frente alinhado com o pé." },
-    { id: "bridge1", n: "Elevação pélvica unilateral", a: "3 séries de 12–15/perna", r: "60s", u: "reps", s: 1 },
-    { id: "dips", n: "Mergulho (paralelas ou banco)", a: "3 séries de 6–12", r: "90s", u: "reps", s: 1,
-      note: "No banco, com os pés no chão, é mais fácil; nas paralelas, mais difícil. Desça só até os cotovelos em 90° para poupar o ombro." },
-    { id: "legraise", n: "Elevação de pernas (deitada ou suspensa)", a: "3 séries de 10–15", r: "60s", u: "reps", s: 1 },
-    { id: "plankcal", n: "Prancha", a: "3 séries de 30–60 s", r: "45s", u: "s", s: 5 },
-    { id: "circ", n: "Circuito final (opcional)", a: "3 rodadas", r: "30s", bw: 1,
-      note: "30 s de mountain climbers + 30 s de polichinelo + 30 s de descanso, 3 rodadas. Ajuda no gasto de energia sem pesar nas pernas." } ] }
+  K: { n: "Calistenia (aula)", chip: "CAL", ex: [
+    { id: "calmin", n: "Aula de calistenia", a: "duração", u: "min", s: 5, nu: 1, noimg: 1,
+      note: "Só o registro: o treino em si é o da sua aula. Anote quantos minutos durou." },
+    { id: "calrpe", n: "Esforço da aula (0–10)", a: "ao final", u: "/10", s: 1, nu: 1, noimg: 1,
+      note: "0 = descanso, 10 = máximo possível. Ajuda a ver se o total da semana (academia + calistenia) está pesado demais." } ] }
 };
 
 // Aquecimento (~10 min).
@@ -167,8 +156,7 @@ const PERNAS = ["Bicicleta ou esteira leve, 5 min", "Glute bridge (ponte de glú
 const AQ = {
   A: [...PERNAS, "Agachamento no Smith leve (~50%), 1x10"],
   B: ["Remo ergométrico ou bike leve, 5 min", "Crucifixo inverso na máquina bem leve, 2x15", "Face pull leve na polia, 2x15", "Puxada frontal leve (~50%), 1x10"],
-  C: [...PERNAS, "Romanian deadlift leve (~50%), 1x10"],
-  K: ["Polichinelos ou corrida leve, 3 min", "Círculos de ombro e flexão escapular, 2x10", "Agachamento profundo com pausa e mobilidade de quadril, 1 min", "Flexão inclinada leve, 1x8"]
+  C: [...PERNAS, "Romanian deadlift leve (~50%), 1x10"]
 };
 const MES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const DIA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -189,7 +177,7 @@ const today = () => { const d = new Date(); return d.getFullYear() + "-" + pad(d
 const fmt = (n) => String(n).replace(".", ",");
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const TAGS = ["Dor", "Difícil", "Fácil", "Não gostei"];
-const PERFIL = "Perfil: mulher adulta (idade, peso, altura e lesões não informados). Objetivos: 1) ganhar massa muscular, 2) perder gordura corporal. Já faz calistenia 2x por semana além da musculação A/B/C. A academia não tem mini bands.";
+const PERFIL = "Perfil: mulher adulta (idade, peso, altura e lesões não informados). Objetivos: 1) ganhar massa muscular, 2) perder gordura corporal. Já faz calistenia 2x por semana em aulas próprias (o app só registra duração e esforço), além da musculação A/B/C. A academia não tem mini bands.";
 const rlab = (s) => (s >= 120 && s % 60 === 0 ? s / 60 + " min" : s + "s");
 const noteKey = () => today() + t; // nota do treino de hoje: "AAAA-MM-DD" + letra
 const dm = (d) => d.slice(8) + "/" + d.slice(5, 7);
@@ -249,7 +237,7 @@ function hoje() {
   h += `<div class="chips">` + Object.keys(W).map((k) => `<button class="${k === t ? "sel" : ""}" data-a="treino" data-v="${k}" aria-pressed="${k === t}" aria-label="${W[k].chip ? W[k].n : "Treino " + k}">${W[k].chip || k}</button>`).join("") + `</div>`;
   h += `<h2><span>${W[t].n}</span><span>${doneN}/${W[t].ex.length}</span></h2>`;
   const wd = db.warm === today() + t, open = aqOpen ?? (!wd && doneN === 0);
-  h += `<div class="card ex ${wd ? "done" : ""} ${open ? "open" : ""}"><div class="row">
+  if (AQ[t]) h += `<div class="card ex ${wd ? "done" : ""} ${open ? "open" : ""}"><div class="row">
     <button class="info grow" data-a="aq" aria-expanded="${open}" aria-label="Aquecimento: mostrar ou esconder"><span class="name">Aquecimento · 10 min</span>${I.chev}</button>
     <button class="rest" data-tm-go="600" aria-label="Cronometrar 10 minutos de aquecimento">${I.clock}10 min</button>
     <button class="${wd ? "on" : ""}" data-a="warm" aria-pressed="${wd}" aria-label="Marcar aquecimento como feito">${I.check}</button></div>`
@@ -304,7 +292,7 @@ function criterios() {
     <details ${change ? "open" : ""}><summary>Ver critérios</summary>
     <p><b>Subir a carga</b>: fez o topo das reps em todas as séries, com técnica boa e sobrando 1–2 reps → toque na seta ↑ do exercício; no próximo treino a carga já vem maior (ACSM: +2–10%). O app também avisa “tente +” quando a carga repetiu 2 vezes.</p>
     <p><b>Esforço e descanso</b>: termine as séries com 1–3 reps sobrando. Qualquer faixa de 6–15 reps funciona se você chegar perto da falha (<a href="https://pubmed.ncbi.nlm.nih.gov/28834797/" target="_blank" rel="noopener">Schoenfeld 2017</a>). Descanse ~2 min nos básicos (agachamento, leg press, hip thrust, stiff) e ~1 min nos isoladores.</p>
-    <p><b>Junto com a calistenia</b>: faça a musculação em 3 dias (ex.: seg, qua, sex) e a calistenia em 2 dias diferentes (ex.: ter e sáb), usando o treino CAL do app e registrando as repetições. Com o peso do corpo a hipertrofia também funciona se a série chegar perto da falha; quando passar de 15 reps com folga, use uma variação mais difícil. Evite calistenia pesada de pernas no dia anterior ao treino A ou C. Se costas, ombros ou braços estiverem muito cansados no treino B, tire 1 série dos isoladores (rosca, tríceps, elevação lateral) em vez de faltar.</p>
+    <p><b>Junto com a calistenia</b>: faça a musculação em 3 dias (ex.: seg, qua, sex) e a calistenia em 2 dias diferentes (ex.: ter e sáb); registre cada aula no botão CAL do app. Evite calistenia pesada de pernas no dia anterior ao treino A ou C. Se costas, ombros ou braços estiverem muito cansados no treino B, tire 1 série dos isoladores (rosca, tríceps, elevação lateral) em vez de faltar.</p>
     <p><b>Perder gordura</b>: vem principalmente da alimentação. Déficit moderado (~300–500 kcal/dia abaixo do que gasta): déficits maiores atrapalham o ganho de músculo (<a href="https://read.qxmd.com/read/34623696/energy-deficiency-impairs-resistance-training-gains-in-lean-mass-but-not-strength-a-meta-analysis-and-meta-regression" target="_blank" rel="noopener">Murphy e Koehler 2022</a>). Proteína ~1,6 g por kg de peso por dia (<a href="https://pubmed.ncbi.nlm.nih.gov/28698222/" target="_blank" rel="noopener">Morton 2018</a>). Caminhe 7–10 mil passos por dia. HIIT e cardio moderado reduzem gordura e cintura de forma parecida (<a href="https://pubmed.ncbi.nlm.nih.gov/28401638/" target="_blank" rel="noopener">Wewege 2017</a>): a caminhada do A e o intervalado do C já bastam. Para um plano alimentar sob medida, procure nutricionista.</p>
     <p><b>Como acompanhar</b>: meça a cintura 1x por semana (mesmo horário, em jejum). Cintura caindo e cargas subindo = a recomposição está funcionando, mesmo que o peso na balança mude pouco.</p>
     <p><b>Trocar o ciclo</b>: a partir da semana 12, ou da semana 8 se 3+ exercícios ficaram com a mesma carga nos últimos 3 treinos (“parados”).</p>
